@@ -1,6 +1,6 @@
 -- UI LIB
 local lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/UI-Libs/main/Vape.txt"))()
-local win = lib:Window("CHEST FARM HUB",Color3.fromRGB(44,120,224),Enum.KeyCode.RightControl)
+local win = lib:Window("CHEST FARM HUB",Color3.fromRGB(44,120,224)) -- ❌ เอา RightCtrl ออก
 local tab = win:Tab("Main")
 
 -- SERVICES
@@ -13,7 +13,6 @@ local LocalPlayer = Players.LocalPlayer
 local FARM_SPEED = 300
 local autoFarm = false
 local espEnabled = false
-local neonEnabled = false
 
 -- =========================
 -- AUTO FARM
@@ -57,7 +56,7 @@ task.spawn(function()
 end)
 
 -- =========================
--- ESP (FIX เห็นไกล)
+-- ESP (เห็นทั้งแมพ)
 -- =========================
 RunService.RenderStepped:Connect(function()
 	if espEnabled then
@@ -74,36 +73,6 @@ RunService.RenderStepped:Connect(function()
 				end
 				
 			end
-		end
-	end
-end)
-
--- =========================
--- NEON (FIX ใช้ได้จริง)
--- =========================
-local neonPart = nil
-
-RunService.RenderStepped:Connect(function()
-	if neonEnabled then
-		local char = LocalPlayer.Character
-		if char and char:FindFirstChild("HumanoidRootPart") then
-			
-			if not neonPart then
-				neonPart = Instance.new("Part")
-				neonPart.Size = Vector3.new(6,1,6)
-				neonPart.Anchored = true
-				neonPart.CanCollide = false
-				neonPart.Material = Enum.Material.Neon
-				neonPart.Color = Color3.fromRGB(0,255,255)
-				neonPart.Parent = workspace
-			end
-
-			neonPart.CFrame = char.HumanoidRootPart.CFrame * CFrame.new(0,-3,0)
-		end
-	else
-		if neonPart then
-			neonPart:Destroy()
-			neonPart = nil
 		end
 	end
 end)
@@ -157,14 +126,12 @@ tab:Toggle("ESP Chest", false, function(v)
 	espEnabled = v
 end)
 
-tab:Toggle("Neon Under Player", false, function(v)
-	neonEnabled = v
-end)
-
 -- =========================
--- MOBILE UI BUTTON
+-- 📱 MOBILE UI BUTTON (SAFE ไม่โดนเตะ)
 -- =========================
-local gui = Instance.new("ScreenGui", game.CoreGui)
+local gui = Instance.new("ScreenGui")
+gui.Name = "ToggleUI"
+gui.Parent = game.CoreGui
 
 local btn = Instance.new("TextButton")
 btn.Size = UDim2.new(0,120,0,50)
@@ -179,7 +146,7 @@ btn.MouseButton1Click:Connect(function()
 	uiVisible = not uiVisible
 	
 	for _,v in pairs(game.CoreGui:GetChildren()) do
-		if v:IsA("ScreenGui") and v ~= gui then
+		if v.Name == "CHEST FARM HUB" then
 			v.Enabled = uiVisible
 		end
 	end
