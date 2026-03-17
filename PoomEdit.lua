@@ -6,12 +6,14 @@ local tab = win:Tab("Main")
 -- SERVICES
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
 -- SETTINGS
 local FARM_SPEED = 300
 local autoFarm = false
 local espEnabled = false
+local neonEnabled = false
 
 -- =========================
 -- AUTO FARM
@@ -55,62 +57,56 @@ task.spawn(function()
 end)
 
 -- =========================
--- ESP CHEST
+-- ESP (FIX เห็นไกล)
 -- =========================
-local function addESP(obj)
-	if obj:FindFirstChild("ESP") then return end
-	
-	local h = Instance.new("Highlight")
-	h.Name = "ESP"
-	h.FillColor = Color3.fromRGB(255,255,0)
-	h.FillTransparency = 0.3
-	h.OutlineTransparency = 0
-	h.Parent = obj
-end
-
-task.spawn(function()
-	while task.wait(1) do
-		if espEnabled then
-			for _,v in pairs(getChests()) do
-				addESP(v)
+RunService.RenderStepped:Connect(function()
+	if espEnabled then
+		for _,v in pairs(workspace:GetDescendants()) do
+			if string.find(v.Name:lower(),"chest") then
+				
+				if not v:FindFirstChild("ESP") then
+					local h = Instance.new("Highlight")
+					h.Name = "ESP"
+					h.FillColor = Color3.fromRGB(255,255,0)
+					h.FillTransparency = 0.3
+					h.OutlineTransparency = 0
+					h.Parent = v
+				end
+				
 			end
 		end
 	end
 end)
 
 -- =========================
--- NEON
+-- NEON (FIX ใช้ได้จริง)
 -- =========================
 local neonPart = nil
 
-local function createNeon()
-	local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-	local hrp = char:WaitForChild("HumanoidRootPart")
+RunService.RenderStepped:Connect(function()
+	if neonEnabled then
+		local char = LocalPlayer.Character
+		if char and char:FindFirstChild("HumanoidRootPart") then
+			
+			if not neonPart then
+				neonPart = Instance.new("Part")
+				neonPart.Size = Vector3.new(6,1,6)
+				neonPart.Anchored = true
+				neonPart.CanCollide = false
+				neonPart.Material = Enum.Material.Neon
+				neonPart.Color = Color3.fromRGB(0,255,255)
+				neonPart.Parent = workspace
+			end
 
-	if neonPart then neonPart:Destroy() end
-
-	neonPart = Instance.new("Part")
-	neonPart.Size = Vector3.new(6,1,6)
-	neonPart.Anchored = false
-	neonPart.CanCollide = false
-	neonPart.Material = Enum.Material.Neon
-	neonPart.Color = Color3.fromRGB(0,255,255)
-	neonPart.Parent = workspace
-
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = neonPart
-	weld.Part1 = hrp
-	weld.Parent = neonPart
-
-	neonPart.CFrame = hrp.CFrame * CFrame.new(0,-3,0)
-end
-
-local function removeNeon()
-	if neonPart then
-		neonPart:Destroy()
-		neonPart = nil
+			neonPart.CFrame = char.HumanoidRootPart.CFrame * CFrame.new(0,-3,0)
+		end
+	else
+		if neonPart then
+			neonPart:Destroy()
+			neonPart = nil
+		end
 	end
-end
+end)
 
 -- =========================
 -- BELI TRACK
@@ -162,11 +158,29 @@ tab:Toggle("ESP Chest", false, function(v)
 end)
 
 tab:Toggle("Neon Under Player", false, function(v)
-	if v then
-		createNeon()
-	else
-		removeNeon()
-	end
+	neonEnabled = v
 end)
 
-tab:Label("Press RightCtrl to Toggle UI")
+-- =========================
+-- MOBILE UI BUTTON
+-- =========================
+local gui = Instance.new("ScreenGui", game.CoreGui)
+
+local btn = Instance.new("TextButton")
+btn.Size = UDim2.new(0,120,0,50)
+btn.Position = UDim2.new(0,20,0.5,0)
+btn.Text = "OPEN UI"
+btn.BackgroundColor3 = Color3.fromRGB(0,170,255)
+btn.Parent = gui
+
+local uiVisible = true
+
+btn.MouseButton1Click:Connect(function()
+	uiVisible = not uiVisible
+	
+	for _,v in pairs(game.CoreGui:GetChildren()) do
+		if v:IsA("ScreenGui") and v ~= gui then
+			v.Enabled = uiVisible
+		end
+	end
+end)
