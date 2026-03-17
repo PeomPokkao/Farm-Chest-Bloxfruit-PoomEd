@@ -1,103 +1,191 @@
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+-- =========================
+-- 🔥 LOAD UI (VAPE)
+-- =========================
+local lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/UI-Libs/main/Vape.txt"))()
 
-local Window = OrionLib:MakeWindow({Name = "Title of the library", HidePremium = false, SaveConfig = true, ConfigFolder = "OrionTest"})
+local win = lib:Window("Poom Hub", Color3.fromRGB(44,120,224), Enum.KeyCode.RightControl)
+local tab = win:Tab("Main")
 
---[[
-Name = <string> - The name of the UI.
-HidePremium = <bool> - Whether or not the user details shows Premium status or not.
-SaveConfig = <bool> - Toggles the config saving in the UI.
-ConfigFolder = <string> - The name of the folder where the configs are saved.
-IntroEnabled = <bool> - Whether or not to show the intro animation.
-IntroText = <string> - Text to show in the intro animation.
-IntroIcon = <string> - URL to the image you want to use in the intro animation.
-Icon = <string> - URL to the image you want displayed on the window.
-CloseCallback = <function> - Function to execute when the window is closed.
-]]
+-- =========================
+-- 🔧 SERVICES
+-- =========================
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local player = Players.LocalPlayer
 
-local Tab1 = Window:MakeTab({
-	Name = "Tab 1",
-	Icon = "rbxassetid://4483345998",
-	PremiumOnly = false
-})
+local function getChar()
+	return player.Character or player.CharacterAdded:Wait()
+end
 
---[[
-Name = <string> - The name of the tab.
-Icon = <string> - The icon of the tab.
-PremiumOnly = <bool> - Makes the tab accessible to Sirus Premium users only.
-]]
+-- =========================
+-- 💰 BELI
+-- =========================
+local beliEarned = 0
+local lastBeli = 0
 
-local Section = Tab1:AddSection({
-	Name = "Section"
-})
+local function getBeliValue()
+	local ls = player:FindFirstChild("leaderstats")
+	if ls then
+		for _,v in pairs(ls:GetChildren()) do
+			if v:IsA("IntValue") or v:IsA("NumberValue") then
+				if string.find(v.Name:lower(),"beli") or string.find(v.Name:lower(),"money") then
+					return v
+				end
+			end
+		end
+	end
+end
 
---[[
-Name = <string> - The name of the section.
-]]
+local function updateBeli()
+	local beli = getBeliValue()
+	if beli then lastBeli = beli.Value end
+end
 
-OrionLib:MakeNotification({
-	Name = "Title!",
-	Content = "Notification content... what will it say??",
-	Image = "rbxassetid://4483345998",
-	Time = 5000
-})
+-- =========================
+-- 🔥 FOD
+-- =========================
+local fodCount = 0
 
---[[
-Title = <string> - The title of the notification.
-Content = <string> - The content of the notification.
-Image = <string> - The icon of the notification.
-Time = <number> - The duration of the notfication.
-]]
+local function scanFOD()
+	fodCount = 0
+	
+	local function scan(c)
+		for _,v in pairs(c:GetChildren()) do
+			if v.Name == "First of Darkness" then
+				fodCount += 1
+			end
+		end
+	end
 
-Tab1:AddButton({
-	Name = "Button!",
-	Callback = function()
-      		print("button pressed")
-  	end    
-})
+	local bp = player:FindFirstChild("Backpack")
+	local char = getChar()
 
---[[
-Name = <string> - The name of the button.
-Callback = <function> - The function of the button.
-]]
+	if bp then scan(bp) end
+	if char then scan(char) end
 
-Tab1:AddToggle({
-	Name = "This is a toggle!",
-	Default = false,
-	Callback = function(Value)
-		print(Value)
-	end    
-})
+	lib:Notification("FOD", "ทั้งหมด: "..fodCount, "OK")
+end
 
-Tab1:AddLabel("Label")
+-- =========================
+-- 🟢 AUTO FARM
+-- =========================
+local autoFarm = false
 
-Tab1:AddTextbox({
-	Name = "Textbox",
-	Default = "default box input",
-	TextDisappear = true,
-	Callback = function(Value)
-		print(Value)
-	end	  
-})
+local function TweenTo(pos)
+	local char = getChar()
+	local hrp = char:WaitForChild("HumanoidRootPart")
 
---[[
-Name = <string> - The name of the textbox.
-Default = <string> - The default value of the textbox.
-TextDisappear = <bool> - Makes the text disappear in the textbox after losing focus.
-Callback = <function> - The function of the textbox.
-]]
+	local dist = (hrp.Position - pos).Magnitude
+	local tween = TweenService:Create(
+		hrp,
+		TweenInfo.new(dist / 120, Enum.EasingStyle.Linear),
+		{CFrame = CFrame.new(pos)}
+	)
 
-Tab1:AddDropdown({
-	Name = "Dropdown",
-	Default = "1",
-	Options = {"1", "2"},
-	Callback = function(Value)
-		print(Value)
-	end    
-})
+	tween:Play()
+	tween.Completed:Wait()
+end
 
---[[
-Name = <string> - The name of the dropdown.
-Default = <string> - The default value of the dropdown.
-Options = <table> - The options in the dropdown.
-Callback = <function> - The function of the dropdown.
-]]
+local function getChests()
+	local t = {}
+	for _,v in pairs(workspace:GetDescendants()) do
+		if v.Name == "Chest" and v:IsA("Model") and v:FindFirstChild("HumanoidRootPart") then
+			table.insert(t,v)
+		end
+	end
+	return t
+end
+
+local function getClosestChest()
+	local char = getChar()
+	local hrp = char:WaitForChild("HumanoidRootPart")
+
+	local closest, dist = nil, math.huge
+	for _,c in pairs(getChests()) do
+		local d = (hrp.Position - c.HumanoidRootPart.Position).Magnitude
+		if d < dist then
+			dist = d
+			closest = c
+		end
+	end
+	return closest
+end
+
+task.spawn(function()
+	while task.wait(0.2) do
+		if autoFarm then
+			local chest = getClosestChest()
+			if chest then
+				updateBeli()
+				TweenTo(chest.HumanoidRootPart.Position)
+				task.wait(1)
+
+				local beli = getBeliValue()
+				if beli then
+					local diff = beli.Value - lastBeli
+					if diff > 0 then
+						beliEarned += diff
+						lib:Notification("Beli", "+ "..diff.." (รวม "..beliEarned..")", "OK")
+					end
+				end
+			end
+		end
+	end
+end)
+
+-- =========================
+-- 🔵 ESP
+-- =========================
+local espEnabled = false
+local espConnection
+
+local function addESP(obj)
+	if obj:FindFirstChild("ESP") then return end
+	local h = Instance.new("Highlight")
+	h.Name = "ESP"
+	h.FillColor = Color3.fromRGB(255,255,0)
+	h.FillTransparency = 0.3
+	h.Parent = obj
+end
+
+local function removeESP()
+	for _,v in pairs(workspace:GetDescendants()) do
+		if v.Name == "Chest" and v:FindFirstChild("ESP") then
+			v.ESP:Destroy()
+		end
+	end
+end
+
+-- =========================
+-- 🎮 UI
+-- =========================
+tab:Toggle("Auto Farm Chest", false, function(v)
+	autoFarm = v
+end)
+
+tab:Toggle("ESP Chest", false, function(v)
+	espEnabled = v
+	
+	if v then
+		for _,c in pairs(getChests()) do
+			addESP(c)
+		end
+		
+		espConnection = workspace.DescendantAdded:Connect(function(obj)
+			if espEnabled and obj.Name == "Chest" then
+				addESP(obj)
+			end
+		end)
+	else
+		if espConnection then espConnection:Disconnect() end
+		removeESP()
+	end
+end)
+
+tab:Button("Check First Of Darkness", function()
+	scanFOD()
+end)
+
+tab:Button("Check Beli Earned", function()
+	lib:Notification("Beli", "รวม: "..beliEarned, "OK")
+end)
