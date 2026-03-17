@@ -1,4 +1,21 @@
 -- =========================
+-- 🔥 LOAD UI (ORION)
+-- =========================
+local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
+
+local Window = OrionLib:MakeWindow({
+	Name = "Poom Hub",
+	HidePremium = false,
+	SaveConfig = false
+})
+
+local Tab1 = Window:MakeTab({
+	Name = "Main",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+-- =========================
 -- 🔧 SERVICES
 -- =========================
 local Players = game:GetService("Players")
@@ -37,7 +54,7 @@ local function updateBeli()
 end
 
 -- =========================
--- 🔥 FIRST OF DARKNESS SYSTEM
+-- 🔥 FIRST OF DARKNESS
 -- =========================
 local fodCount = 0
 local fodEnabled = false
@@ -85,7 +102,6 @@ local function startFOD()
 				OrionLib:MakeNotification({
 					Name = "First Of Darkness",
 					Content = "ได้รับ +1 (รวม: "..fodCount..")",
-					Image = "rbxassetid://4483345998",
 					Time = 3
 				})
 			end
@@ -102,7 +118,7 @@ local function stopFOD()
 end
 
 -- =========================
--- 🟢 AUTO FARM (TWEEN)
+-- 🟢 AUTO FARM
 -- =========================
 local autoFarm = false
 
@@ -157,13 +173,10 @@ task.spawn(function()
 			local chest = getClosestChest()
 			if chest then
 				
-				-- 💰 จำเงินก่อนเก็บ
 				updateBeli()
-
 				TweenTo(chest.HumanoidRootPart.Position)
 				task.wait(1)
 
-				-- 💰 เช็คเงินหลังเก็บ
 				local beli = getBeliValue()
 				if beli then
 					local diff = beli.Value - lastBeli
@@ -173,12 +186,10 @@ task.spawn(function()
 						OrionLib:MakeNotification({
 							Name = "Beli From Chest",
 							Content = "+ "..diff.." (รวม: "..beliEarned..")",
-							Image = "rbxassetid://4483345998",
 							Time = 2
 						})
 					end
 				end
-
 			end
 		end
 	end
@@ -188,6 +199,7 @@ end)
 -- 🔵 ESP
 -- =========================
 local espEnabled = false
+local espConnection
 
 local function addESP(obj)
 	if obj:FindFirstChild("ESP") then return end
@@ -196,7 +208,6 @@ local function addESP(obj)
 	h.Name = "ESP"
 	h.FillColor = Color3.fromRGB(255,255,0)
 	h.FillTransparency = 0.3
-	h.OutlineColor = Color3.new(0,0,0)
 	h.Parent = obj
 end
 
@@ -209,7 +220,7 @@ local function removeESP()
 end
 
 -- =========================
--- 🌈 NEON PART
+-- 🌈 NEON
 -- =========================
 local neonEnabled = false
 local neonPart
@@ -250,34 +261,34 @@ local function removeNeon()
 end
 
 -- =========================
--- 🎮 UI CONNECT
+-- 🎮 UI
 -- =========================
-
 Tab1:AddToggle({
 	Name = "Auto Farm Chest",
 	Default = false,
-	Callback = function(Value)
-		autoFarm = Value
+	Callback = function(v)
+		autoFarm = v
 	end    
 })
 
 Tab1:AddToggle({
 	Name = "Esp Chest",
 	Default = false,
-	Callback = function(Value)
-		espEnabled = Value
+	Callback = function(v)
+		espEnabled = v
 		
-		if Value then
-			for _,v in pairs(getChests()) do
-				addESP(v)
+		if v then
+			for _,c in pairs(getChests()) do
+				addESP(c)
 			end
 			
-			workspace.DescendantAdded:Connect(function(v)
-				if espEnabled and v.Name == "Chest" then
-					addESP(v)
+			espConnection = workspace.DescendantAdded:Connect(function(obj)
+				if espEnabled and obj.Name == "Chest" then
+					addESP(obj)
 				end
 			end)
 		else
+			if espConnection then espConnection:Disconnect() end
 			removeESP()
 		end
 	end    
@@ -286,59 +297,39 @@ Tab1:AddToggle({
 Tab1:AddToggle({
 	Name = "Part Neon",
 	Default = false,
-	Callback = function(Value)
-		neonEnabled = Value
-		
-		if Value then
-			createNeon()
-		else
-			removeNeon()
-		end
+	Callback = function(v)
+		neonEnabled = v
+		if v then createNeon() else removeNeon() end
 	end    
 })
 
 Tab1:AddToggle({
 	Name = "Track First Of Darkness",
 	Default = false,
-	Callback = function(Value)
-		if Value then
-			startFOD()
-		else
-			stopFOD()
-		end
+	Callback = function(v)
+		if v then startFOD() else stopFOD() end
 	end    
 })
 
 textboxRef = Tab1:AddTextbox({
 	Name = "First Of Darkness",
 	Default = "First Of Darkness : 0",
-	TextDisappear = false,
-	Callback = function(Value)
-	end	  
+	TextDisappear = false
 })
 
 Tab1:AddButton({
 	Name = "Check First Of Darkness",
 	Callback = function()
 		scanFOD()
-
-		OrionLib:MakeNotification({
-			Name = "First Of Darkness",
-			Content = "First Of Darkness : "..fodCount,
-			Image = "rbxassetid://4483345998",
-			Time = 4
-		})
 	end    
 })
 
--- 💰 ปุ่มดูเงินรวม
 Tab1:AddButton({
 	Name = "Check Beli Earned",
 	Callback = function()
 		OrionLib:MakeNotification({
 			Name = "Beli Total",
 			Content = "เงินจากกล่อง: "..beliEarned,
-			Image = "rbxassetid://4483345998",
 			Time = 4
 		})
 	end    
