@@ -1,229 +1,101 @@
---// SERVICES
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Stats = game:GetService("Stats")
+-- SERVICES
+local HttpService = game:GetService("HttpService")
+local TweenService = game:GetService("TweenService")
 
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
+-- CONFIG
+local name = "PoomHub"
+local ownerid = "MUynMTtUSV"
 
---// UI
-local ScreenGui = Instance.new("ScreenGui", PlayerGui)
-ScreenGui.Name = "NameHub"
-ScreenGui.ResetOnSpawn = false
+-- CHECK KEY
+local function CheckKey(key)
+    local url = "https://keyauth.win/api/1.2/?type=license&key="..key.."&name="..name.."&ownerid="..ownerid
+    
+    local response = game:HttpGet(url)
+    local data = HttpService:JSONDecode(response)
 
--- MAIN FRAME
+    return data.success
+end
+
+-- UI
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+
 local Main = Instance.new("Frame", ScreenGui)
-Main.Size = UDim2.new(0, 500, 0, 300)
-Main.Position = UDim2.new(0.5, -250, 0.5, -150)
-Main.BackgroundColor3 = Color3.fromRGB(25,25,25)
-Main.Active = true
-Main.Draggable = true
+Main.Size = UDim2.new(0,320,0,180)
+Main.Position = UDim2.new(0.5,-160,0.5,-90)
+Main.BackgroundColor3 = Color3.fromRGB(15,15,15)
 
--- 🔹 ปุ่มเปิด UI (P)
-local OpenButton = Instance.new("TextButton", ScreenGui)
-OpenButton.Size = UDim2.new(0,50,0,50)
-OpenButton.Position = UDim2.new(0,20,0.5,-25)
-OpenButton.Text = "P"
-OpenButton.Visible = false
-OpenButton.BackgroundColor3 = Color3.fromRGB(50,150,250)
-OpenButton.TextColor3 = Color3.new(1,1,1)
-OpenButton.Active = true
-OpenButton.Draggable = true
-
--- TOP BAR
-local TopBar = Instance.new("Frame", Main)
-TopBar.Size = UDim2.new(1,0,0,30)
-TopBar.BackgroundColor3 = Color3.fromRGB(35,35,35)
-
--- TITLE
-local Title = Instance.new("TextLabel", TopBar)
-Title.Size = UDim2.new(0,150,1,0)
-Title.Text = "Name Hub"
-Title.TextColor3 = Color3.new(1,1,1)
+-- Title
+local Title = Instance.new("TextLabel", Main)
+Title.Size = UDim2.new(1,0,0,30)
+Title.Text = "Poom Edit"
 Title.BackgroundTransparency = 1
-Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.TextColor3 = Color3.new(1,1,1)
+Title.TextScaled = true
 
--- INFO (PING + FPS)
-local Info = Instance.new("TextLabel", TopBar)
-Info.Size = UDim2.new(0,250,1,0)
-Info.Position = UDim2.new(0,150,0,0)
-Info.TextColor3 = Color3.new(1,1,1)
-Info.BackgroundTransparency = 1
-Info.Text = "Ping: ... | FPS: ..."
+-- Box
+local Box = Instance.new("TextBox", Main)
+Box.Size = UDim2.new(0.8,0,0,35)
+Box.Position = UDim2.new(0.1,0,0.35,0)
+Box.PlaceholderText = "Enter Key..."
+Box.Text = ""
+Box.BackgroundColor3 = Color3.fromRGB(25,25,25)
+Box.TextColor3 = Color3.new(1,1,1)
+Box.TextScaled = true
 
--- CLOSE BUTTON (แก้แล้ว)
-local Close = Instance.new("TextButton", TopBar)
-Close.Size = UDim2.new(0,30,1,0)
-Close.Position = UDim2.new(1,-30,0,0)
-Close.Text = "X"
-Close.BackgroundColor3 = Color3.fromRGB(150,50,50)
-Close.TextColor3 = Color3.new(1,1,1)
+-- GetKey
+local GetKey = Instance.new("TextButton", Main)
+GetKey.Size = UDim2.new(0.4,-5,0,35)
+GetKey.Position = UDim2.new(0.05,0,0.7,0)
+GetKey.Text = "Get Key"
 
-Close.MouseButton1Click:Connect(function()
-    Main.Visible = false
-    OpenButton.Visible = true
-end)
+-- 🔗 ใส่ลิ้งเว็บมึงตรงนี้
+local KeyLink = "https://peompokkao.github.io/Farm-Chest-Bloxfruit-PoomEd"
 
--- 🔹 เปิด UI กลับ
-OpenButton.MouseButton1Click:Connect(function()
-    Main.Visible = true
-    OpenButton.Visible = false
-end)
-
--- LEFT TAB PANEL
-local Tabs = Instance.new("Frame", Main)
-Tabs.Size = UDim2.new(0,120,1,-30)
-Tabs.Position = UDim2.new(0,0,0,30)
-Tabs.BackgroundColor3 = Color3.fromRGB(30,30,30)
-
--- CONTENT PANEL
-local Content = Instance.new("Frame", Main)
-Content.Size = UDim2.new(1,-120,1,-30)
-Content.Position = UDim2.new(0,120,0,30)
-Content.BackgroundColor3 = Color3.fromRGB(40,40,40)
-
--- LAYOUT
-local TabLayout = Instance.new("UIListLayout", Tabs)
-TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-local ContentLayout = Instance.new("UIListLayout", Content)
-ContentLayout.Padding = UDim.new(0,5)
-
--- TAB FUNCTION
-local Pages = {}
-
-local function CreateTab(name)
-    local Button = Instance.new("TextButton", Tabs)
-    Button.Size = UDim2.new(1,0,0,40)
-    Button.Text = name
-    Button.BackgroundColor3 = Color3.fromRGB(50,50,50)
-    Button.TextColor3 = Color3.new(1,1,1)
-
-    local Page = Instance.new("Frame", Content)
-    Page.Size = UDim2.new(1,0,1,0)
-    Page.Visible = false
-    Page.BackgroundTransparency = 1
-
-    local Layout = Instance.new("UIListLayout", Page)
-    Layout.Padding = UDim.new(0,5)
-
-    Pages[name] = Page
-
-    Button.MouseButton1Click:Connect(function()
-        for _,v in pairs(Pages) do
-            v.Visible = false
-        end
-        Page.Visible = true
-    end)
-
-    return Page
-end
-
--- SECTION
-local function CreateSection(parent, name)
-    local Section = Instance.new("TextLabel", parent)
-    Section.Size = UDim2.new(1,0,0,30)
-    Section.Text = " "..name
-    Section.BackgroundColor3 = Color3.fromRGB(60,60,60)
-    Section.TextColor3 = Color3.new(1,1,1)
-    Section.TextXAlignment = Enum.TextXAlignment.Left
-    return Section
-end
-
--- BUTTON
-local function CreateButton(parent, name, callback)
-    local Btn = Instance.new("TextButton", parent)
-    Btn.Size = UDim2.new(1,0,0,30)
-    Btn.Text = name
-    Btn.BackgroundColor3 = Color3.fromRGB(70,70,70)
-    Btn.TextColor3 = Color3.new(1,1,1)
-
-    Btn.MouseButton1Click:Connect(function()
-        pcall(callback)
-    end)
-end
-
--- TOGGLE
-local function CreateToggle(parent, name, callback)
-    local state = false
-
-    local Btn = Instance.new("TextButton", parent)
-    Btn.Size = UDim2.new(1,0,0,30)
-    Btn.Text = name.." : OFF"
-    Btn.BackgroundColor3 = Color3.fromRGB(70,70,70)
-    Btn.TextColor3 = Color3.new(1,1,1)
-
-    Btn.MouseButton1Click:Connect(function()
-        state = not state
-        Btn.Text = name.." : "..(state and "ON" or "OFF")
-        pcall(callback, state)
-    end)
-end
-
--- DROPDOWN
-local function CreateDropdown(parent, name, list, callback)
-    local Drop = Instance.new("TextButton", parent)
-    Drop.Size = UDim2.new(1,0,0,30)
-    Drop.Text = name
-    Drop.BackgroundColor3 = Color3.fromRGB(70,70,70)
-    Drop.TextColor3 = Color3.new(1,1,1)
-
-    local Frame = Instance.new("Frame", parent)
-    Frame.Size = UDim2.new(1,0,0,#list*25)
-    Frame.Visible = false
-    Frame.BackgroundColor3 = Color3.fromRGB(50,50,50)
-
-    local Layout = Instance.new("UIListLayout", Frame)
-
-    for _,v in pairs(list) do
-        local Option = Instance.new("TextButton", Frame)
-        Option.Size = UDim2.new(1,0,0,25)
-        Option.Text = v
-        Option.BackgroundColor3 = Color3.fromRGB(80,80,80)
-
-        Option.MouseButton1Click:Connect(function()
-            Drop.Text = name..": "..v
-            Frame.Visible = false
-            pcall(callback, v)
-        end)
+GetKey.MouseButton1Click:Connect(function()
+    if setclipboard then
+        setclipboard(KeyLink)
     end
+    game:HttpGet(KeyLink)
+end)
 
-    Drop.MouseButton1Click:Connect(function()
-        Frame.Visible = not Frame.Visible
+-- Submit
+local Submit = Instance.new("TextButton", Main)
+Submit.Size = UDim2.new(0.4,-5,0,35)
+Submit.Position = UDim2.new(0.55,0,0.7,0)
+Submit.Text = "Submit"
+
+-- Status
+local Status = Instance.new("TextLabel", Main)
+Status.Size = UDim2.new(1,0,0,20)
+Status.Position = UDim2.new(0,0,1,-20)
+Status.BackgroundTransparency = 1
+Status.TextColor3 = Color3.new(1,1,1)
+Status.TextScaled = true
+
+-- Submit Function
+Submit.MouseButton1Click:Connect(function()
+    local key = Box.Text
+    Status.Text = "Checking..."
+
+    local ok = false
+    pcall(function()
+        ok = CheckKey(key)
     end)
-end
 
--- CREATE TABS
-local Tab1 = CreateTab("Tab 1")
-local Tab2 = CreateTab("Tab 2")
+    if ok then
+        Status.Text = "✔ Correct Key"
+        wait(0.5)
+        Main:Destroy()
 
--- DEFAULT SHOW
-Tab1.Visible = true
-
--- TAB 1 CONTENT
-CreateSection(Tab1, "Main")
-CreateButton(Tab1, "Button Test", function()
-    print("Clicked!")
+        -- โหลด HUB มึง
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/PeomPokkao/Farm-Chest-Bloxfruit-PoomEd/refs/heads/main/PoomEdit.lua"))()
+    else
+        Status.Text = "❌ Invalid Key"
+    end
 end)
 
-CreateToggle(Tab1, "Auto Farm", function(v)
-    print("Toggle:", v)
-end)
-
-CreateDropdown(Tab1, "Select Stats", {"Strength","Speed","Defense"}, function(v)
-    print("Selected:", v)
-end)
-
--- TAB 2 CONTENT
-CreateSection(Tab2, "Teleport")
-CreateButton(Tab2, "Go Spawn", function()
-    print("Teleport Spawn")
-end)
-
--- FPS + PING LOOP
-RunService.RenderStepped:Connect(function()
-    local fps = math.floor(1 / RunService.RenderStepped:Wait())
-    local ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
-
-    Info.Text = "Ping: "..ping.." | FPS: "..fps
-end)
+-- Animation
+Main.Size = UDim2.new(0,0,0,0)
+TweenService:Create(Main,TweenInfo.new(0.4,Enum.EasingStyle.Back),{
+    Size = UDim2.new(0,320,0,180)
+}):Play()
