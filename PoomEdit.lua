@@ -19,6 +19,17 @@ Main.BackgroundColor3 = Color3.fromRGB(25,25,25)
 Main.Active = true
 Main.Draggable = true
 
+-- 🔹 ปุ่มเปิด UI (P)
+local OpenButton = Instance.new("TextButton", ScreenGui)
+OpenButton.Size = UDim2.new(0,50,0,50)
+OpenButton.Position = UDim2.new(0,20,0.5,-25)
+OpenButton.Text = "P"
+OpenButton.Visible = false
+OpenButton.BackgroundColor3 = Color3.fromRGB(50,150,250)
+OpenButton.TextColor3 = Color3.new(1,1,1)
+OpenButton.Active = true
+OpenButton.Draggable = true
+
 -- TOP BAR
 local TopBar = Instance.new("Frame", Main)
 TopBar.Size = UDim2.new(1,0,0,30)
@@ -40,7 +51,7 @@ Info.TextColor3 = Color3.new(1,1,1)
 Info.BackgroundTransparency = 1
 Info.Text = "Ping: ... | FPS: ..."
 
--- CLOSE BUTTON
+-- CLOSE BUTTON (แก้แล้ว)
 local Close = Instance.new("TextButton", TopBar)
 Close.Size = UDim2.new(0,30,1,0)
 Close.Position = UDim2.new(1,-30,0,0)
@@ -49,7 +60,14 @@ Close.BackgroundColor3 = Color3.fromRGB(150,50,50)
 Close.TextColor3 = Color3.new(1,1,1)
 
 Close.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
+    Main.Visible = false
+    OpenButton.Visible = true
+end)
+
+-- 🔹 เปิด UI กลับ
+OpenButton.MouseButton1Click:Connect(function()
+    Main.Visible = true
+    OpenButton.Visible = false
 end)
 
 -- LEFT TAB PANEL
