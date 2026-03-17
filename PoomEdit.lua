@@ -1,202 +1,211 @@
--- UI LIB
-local lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/UI-Libs/main/Vape.txt"))()
-local win = lib:Window("CHEST FARM HUB",Color3.fromRGB(44,120,224))
-local tab = win:Tab("Main")
-
--- SERVICES
+--// SERVICES
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local Stats = game:GetService("Stats")
 
--- 🔥 เพิ่มระยะโหลด
-pcall(function()
-	LocalPlayer.MaximumSimulationRadius = math.huge
-	sethiddenproperty(LocalPlayer, "SimulationRadius", math.huge)
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+--// UI
+local ScreenGui = Instance.new("ScreenGui", PlayerGui)
+ScreenGui.Name = "NameHub"
+ScreenGui.ResetOnSpawn = false
+
+-- MAIN FRAME
+local Main = Instance.new("Frame", ScreenGui)
+Main.Size = UDim2.new(0, 500, 0, 300)
+Main.Position = UDim2.new(0.5, -250, 0.5, -150)
+Main.BackgroundColor3 = Color3.fromRGB(25,25,25)
+Main.Active = true
+Main.Draggable = true
+
+-- TOP BAR
+local TopBar = Instance.new("Frame", Main)
+TopBar.Size = UDim2.new(1,0,0,30)
+TopBar.BackgroundColor3 = Color3.fromRGB(35,35,35)
+
+-- TITLE
+local Title = Instance.new("TextLabel", TopBar)
+Title.Size = UDim2.new(0,150,1,0)
+Title.Text = "Name Hub"
+Title.TextColor3 = Color3.new(1,1,1)
+Title.BackgroundTransparency = 1
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+-- INFO (PING + FPS)
+local Info = Instance.new("TextLabel", TopBar)
+Info.Size = UDim2.new(0,250,1,0)
+Info.Position = UDim2.new(0,150,0,0)
+Info.TextColor3 = Color3.new(1,1,1)
+Info.BackgroundTransparency = 1
+Info.Text = "Ping: ... | FPS: ..."
+
+-- CLOSE BUTTON
+local Close = Instance.new("TextButton", TopBar)
+Close.Size = UDim2.new(0,30,1,0)
+Close.Position = UDim2.new(1,-30,0,0)
+Close.Text = "X"
+Close.BackgroundColor3 = Color3.fromRGB(150,50,50)
+Close.TextColor3 = Color3.new(1,1,1)
+
+Close.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
 end)
 
--- SETTINGS
-local FARM_SPEED = 300
-local autoFarm = false
-local espEnabled = false
+-- LEFT TAB PANEL
+local Tabs = Instance.new("Frame", Main)
+Tabs.Size = UDim2.new(0,120,1,-30)
+Tabs.Position = UDim2.new(0,0,0,30)
+Tabs.BackgroundColor3 = Color3.fromRGB(30,30,30)
 
--- =========================
--- 🔥 TWEEN (นิ่ง + ทะลุ + ไม่ลอย)
--- =========================
-local function TweenTo(pos)
-	local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-	local hrp = char:WaitForChild("HumanoidRootPart")
+-- CONTENT PANEL
+local Content = Instance.new("Frame", Main)
+Content.Size = UDim2.new(1,-120,1,-30)
+Content.Position = UDim2.new(0,120,0,30)
+Content.BackgroundColor3 = Color3.fromRGB(40,40,40)
 
-	for _,v in pairs(char:GetDescendants()) do
-		if v:IsA("BasePart") then
-			v.CanCollide = false
-		end
-	end
+-- LAYOUT
+local TabLayout = Instance.new("UIListLayout", Tabs)
+TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-	local target = Vector3.new(pos.X, hrp.Position.Y, pos.Z)
+local ContentLayout = Instance.new("UIListLayout", Content)
+ContentLayout.Padding = UDim.new(0,5)
 
-	local dist = (hrp.Position - target).Magnitude
-	local tween = TweenService:Create(
-		hrp,
-		TweenInfo.new(dist / FARM_SPEED, Enum.EasingStyle.Linear),
-		{CFrame = CFrame.new(target)}
-	)
-	tween:Play()
-	tween.Completed:Wait()
+-- TAB FUNCTION
+local Pages = {}
+
+local function CreateTab(name)
+    local Button = Instance.new("TextButton", Tabs)
+    Button.Size = UDim2.new(1,0,0,40)
+    Button.Text = name
+    Button.BackgroundColor3 = Color3.fromRGB(50,50,50)
+    Button.TextColor3 = Color3.new(1,1,1)
+
+    local Page = Instance.new("Frame", Content)
+    Page.Size = UDim2.new(1,0,1,0)
+    Page.Visible = false
+    Page.BackgroundTransparency = 1
+
+    local Layout = Instance.new("UIListLayout", Page)
+    Layout.Padding = UDim.new(0,5)
+
+    Pages[name] = Page
+
+    Button.MouseButton1Click:Connect(function()
+        for _,v in pairs(Pages) do
+            v.Visible = false
+        end
+        Page.Visible = true
+    end)
+
+    return Page
 end
 
--- =========================
--- 🔥 หา "กล่องใกล้สุด"
--- =========================
-local function getNearestChest()
-	local char = LocalPlayer.Character
-	if not char then return nil end
-	
-	local hrp = char:FindFirstChild("HumanoidRootPart")
-	if not hrp then return nil end
-
-	local nearest = nil
-	local shortest = math.huge
-
-	for _,v in pairs(workspace:GetDescendants()) do
-		if string.find(v.Name:lower(),"chest") then
-			
-			local pos = nil
-			
-			if v:IsA("BasePart") then
-				pos = v.Position
-			elseif v:IsA("Model") and v.PrimaryPart then
-				pos = v.PrimaryPart.Position
-			end
-
-			if pos then
-				local dist = (hrp.Position - pos).Magnitude
-				if dist < shortest then
-					shortest = dist
-					nearest = pos
-				end
-			end
-			
-		end
-	end
-
-	return nearest
+-- SECTION
+local function CreateSection(parent, name)
+    local Section = Instance.new("TextLabel", parent)
+    Section.Size = UDim2.new(1,0,0,30)
+    Section.Text = " "..name
+    Section.BackgroundColor3 = Color3.fromRGB(60,60,60)
+    Section.TextColor3 = Color3.new(1,1,1)
+    Section.TextXAlignment = Enum.TextXAlignment.Left
+    return Section
 end
 
--- =========================
--- 🔥 AUTO FARM (ฉลาดขึ้น)
--- =========================
-task.spawn(function()
-	while task.wait(0.1) do
-		if autoFarm then
-			local target = getNearestChest()
-			if target then
-				TweenTo(target)
-			end
-		end
-	end
+-- BUTTON
+local function CreateButton(parent, name, callback)
+    local Btn = Instance.new("TextButton", parent)
+    Btn.Size = UDim2.new(1,0,0,30)
+    Btn.Text = name
+    Btn.BackgroundColor3 = Color3.fromRGB(70,70,70)
+    Btn.TextColor3 = Color3.new(1,1,1)
+
+    Btn.MouseButton1Click:Connect(function()
+        pcall(callback)
+    end)
+end
+
+-- TOGGLE
+local function CreateToggle(parent, name, callback)
+    local state = false
+
+    local Btn = Instance.new("TextButton", parent)
+    Btn.Size = UDim2.new(1,0,0,30)
+    Btn.Text = name.." : OFF"
+    Btn.BackgroundColor3 = Color3.fromRGB(70,70,70)
+    Btn.TextColor3 = Color3.new(1,1,1)
+
+    Btn.MouseButton1Click:Connect(function()
+        state = not state
+        Btn.Text = name.." : "..(state and "ON" or "OFF")
+        pcall(callback, state)
+    end)
+end
+
+-- DROPDOWN
+local function CreateDropdown(parent, name, list, callback)
+    local Drop = Instance.new("TextButton", parent)
+    Drop.Size = UDim2.new(1,0,0,30)
+    Drop.Text = name
+    Drop.BackgroundColor3 = Color3.fromRGB(70,70,70)
+    Drop.TextColor3 = Color3.new(1,1,1)
+
+    local Frame = Instance.new("Frame", parent)
+    Frame.Size = UDim2.new(1,0,0,#list*25)
+    Frame.Visible = false
+    Frame.BackgroundColor3 = Color3.fromRGB(50,50,50)
+
+    local Layout = Instance.new("UIListLayout", Frame)
+
+    for _,v in pairs(list) do
+        local Option = Instance.new("TextButton", Frame)
+        Option.Size = UDim2.new(1,0,0,25)
+        Option.Text = v
+        Option.BackgroundColor3 = Color3.fromRGB(80,80,80)
+
+        Option.MouseButton1Click:Connect(function()
+            Drop.Text = name..": "..v
+            Frame.Visible = false
+            pcall(callback, v)
+        end)
+    end
+
+    Drop.MouseButton1Click:Connect(function()
+        Frame.Visible = not Frame.Visible
+    end)
+end
+
+-- CREATE TABS
+local Tab1 = CreateTab("Tab 1")
+local Tab2 = CreateTab("Tab 2")
+
+-- DEFAULT SHOW
+Tab1.Visible = true
+
+-- TAB 1 CONTENT
+CreateSection(Tab1, "Main")
+CreateButton(Tab1, "Button Test", function()
+    print("Clicked!")
 end)
 
--- =========================
--- 🔥 ESP FULL MAP (ดีที่สุดที่ทำได้)
--- =========================
-local espCache = {}
-
-task.spawn(function()
-	while task.wait(0.3) do
-		if espEnabled then
-			for _,v in pairs(workspace:GetDescendants()) do
-				if string.find(v.Name:lower(),"chest") then
-					
-					if not espCache[v] then
-						espCache[v] = true
-						
-						task.spawn(function()
-							pcall(function()
-								local h = Instance.new("Highlight")
-								h.Name = "ESP"
-								h.FillColor = Color3.fromRGB(255,255,0)
-								h.FillTransparency = 0.3
-								h.OutlineTransparency = 0
-								h.Parent = v
-							end)
-						end)
-					end
-					
-				end
-			end
-		end
-	end
+CreateToggle(Tab1, "Auto Farm", function(v)
+    print("Toggle:", v)
 end)
 
--- =========================
--- 💰 BELI TRACK (FIX แล้ว)
--- =========================
-local beliEarned = 0
-
-task.spawn(function()
-	local stats = LocalPlayer:WaitForChild("leaderstats",10)
-	if not stats then return end
-
-	for _,v in pairs(stats:GetChildren()) do
-		if v:IsA("IntValue") or v:IsA("NumberValue") then
-			if v.Name:lower():find("beli") or v.Name:lower():find("money") then
-				
-				local last = v.Value
-
-				v:GetPropertyChangedSignal("Value"):Connect(function()
-					local diff = v.Value - last
-					if diff > 0 then
-						beliEarned += diff
-						lib:Notification("Beli Earned", "+"..diff.." | Total: "..beliEarned, "OK")
-					end
-					last = v.Value
-				end)
-
-			end
-		end
-	end
+CreateDropdown(Tab1, "Select Stats", {"Strength","Speed","Defense"}, function(v)
+    print("Selected:", v)
 end)
 
--- =========================
--- 🌍 SERVER HOP
--- =========================
-tab:Button("Hop Server", function()
-	game:GetService("TeleportService"):Teleport(game.PlaceId)
+-- TAB 2 CONTENT
+CreateSection(Tab2, "Teleport")
+CreateButton(Tab2, "Go Spawn", function()
+    print("Teleport Spawn")
 end)
 
--- =========================
--- UI CONTROL
--- =========================
-tab:Toggle("Auto Farm Chest", false, function(v)
-	autoFarm = v
-end)
+-- FPS + PING LOOP
+RunService.RenderStepped:Connect(function()
+    local fps = math.floor(1 / RunService.RenderStepped:Wait())
+    local ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
 
-tab:Toggle("ESP Chest", false, function(v)
-	espEnabled = v
-end)
-
--- =========================
--- 📱 ปุ่มเปิด/ปิด UI (มือถือใช้ได้)
--- =========================
-local gui = Instance.new("ScreenGui")
-gui.Name = "ToggleUI"
-gui.Parent = game.CoreGui
-
-local btn = Instance.new("TextButton")
-btn.Size = UDim2.new(0,120,0,50)
-btn.Position = UDim2.new(0,20,0.5,0)
-btn.Text = "OPEN UI"
-btn.BackgroundColor3 = Color3.fromRGB(0,170,255)
-btn.Parent = gui
-
-local uiVisible = true
-
-btn.MouseButton1Click:Connect(function()
-	uiVisible = not uiVisible
-	
-	for _,v in pairs(game.CoreGui:GetChildren()) do
-		if v.Name == "CHEST FARM HUB" then
-			v.Enabled = uiVisible
-		end
-	end
+    Info.Text = "Ping: "..ping.." | FPS: "..fps
 end)
