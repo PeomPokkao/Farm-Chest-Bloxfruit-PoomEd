@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Poom Edit Key</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body style="
+background:#0f0f0f;
+color:white;
+font-family:sans-serif;
+text-align:center;
+padding-top:100px;
+">
+
+<h1>Poom Edit</h1>
+
+<input id="keyBox" placeholder="Your Key..." readonly
+style="
+width:300px;
+height:45px;
+font-size:16px;
+text-align:center;
+border:none;
+outline:none;
+background:#1a1a1a;
+color:white;
+border-radius:8px;
+">
+
+<br><br>
+
+<button onclick="genKey()" style="
+width:140px;
+height:45px;
+margin-right:10px;
+background:linear-gradient(90deg, cyan, purple);
+border:none;
+color:white;
+border-radius:8px;
+font-size:15px;
+">Generate</button>
+
+<button onclick="copyKey()" style="
+width:140px;
+height:45px;
+background:#222;
+border:none;
+color:white;
+border-radius:8px;
+font-size:15px;
+">Copy</button>
+
+<p id="status" style="margin-top:20px;color:gray;"></p>
+
+<script>
+function genKey(){
+    let random = Math.random().toString(36).substring(2,8).toUpperCase();
+    let key = "POOM-" + random + "-" + Date.now();
+
+    document.getElementById("keyBox").value = key;
+    document.getElementById("status").innerText = "Key Generated (24h after use)";
+}
+
+function copyKey(){
+    let box = document.getElementById("keyBox");
+    box.select();
+    document.execCommand("copy");
+
+    document.getElementById("status").innerText = "Copied!";
+}
+</script>
+
+</body>
+</html>
