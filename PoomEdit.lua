@@ -1,336 +1,103 @@
--- =========================
--- 🔥 LOAD UI (ORION)
--- =========================
-local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 
-local Window = OrionLib:MakeWindow({
-	Name = "Poom Hub",
-	HidePremium = false,
-	SaveConfig = false
-})
+local Window = OrionLib:MakeWindow({Name = "Title of the library", HidePremium = false, SaveConfig = true, ConfigFolder = "OrionTest"})
+
+--[[
+Name = <string> - The name of the UI.
+HidePremium = <bool> - Whether or not the user details shows Premium status or not.
+SaveConfig = <bool> - Toggles the config saving in the UI.
+ConfigFolder = <string> - The name of the folder where the configs are saved.
+IntroEnabled = <bool> - Whether or not to show the intro animation.
+IntroText = <string> - Text to show in the intro animation.
+IntroIcon = <string> - URL to the image you want to use in the intro animation.
+Icon = <string> - URL to the image you want displayed on the window.
+CloseCallback = <function> - Function to execute when the window is closed.
+]]
 
 local Tab1 = Window:MakeTab({
-	Name = "Main",
+	Name = "Tab 1",
 	Icon = "rbxassetid://4483345998",
 	PremiumOnly = false
 })
 
--- =========================
--- 🔧 SERVICES
--- =========================
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local player = Players.LocalPlayer
+--[[
+Name = <string> - The name of the tab.
+Icon = <string> - The icon of the tab.
+PremiumOnly = <bool> - Makes the tab accessible to Sirus Premium users only.
+]]
 
-local function getChar()
-	return player.Character or player.CharacterAdded:Wait()
-end
-
--- =========================
--- 💰 BELI FROM CHEST ONLY
--- =========================
-local beliEarned = 0
-local lastBeli = 0
-
-local function getBeliValue()
-	local ls = player:FindFirstChild("leaderstats")
-	if ls then
-		for _,v in pairs(ls:GetChildren()) do
-			if (v:IsA("IntValue") or v:IsA("NumberValue")) then
-				if string.find(v.Name:lower(),"beli") or string.find(v.Name:lower(),"money") then
-					return v
-				end
-			end
-		end
-	end
-	return nil
-end
-
-local function updateBeli()
-	local beli = getBeliValue()
-	if beli then
-		lastBeli = beli.Value
-	end
-end
-
--- =========================
--- 🔥 FIRST OF DARKNESS
--- =========================
-local fodCount = 0
-local fodEnabled = false
-local connections = {}
-local textboxRef
-
-local function updateTextbox()
-	if textboxRef then
-		textboxRef:Set("First Of Darkness : "..fodCount)
-	end
-end
-
-local function scanFOD()
-	fodCount = 0
-	
-	local function scan(container)
-		for _,v in pairs(container:GetChildren()) do
-			if v.Name == "First of Darkness" then
-				fodCount += 1
-			end
-		end
-	end
-
-	local backpack = player:FindFirstChild("Backpack")
-	local char = getChar()
-
-	if backpack then scan(backpack) end
-	if char then scan(char) end
-
-	updateTextbox()
-end
-
-local function startFOD()
-	fodEnabled = true
-	local backpack = player:WaitForChild("Backpack")
-
-	scanFOD()
-
-	table.insert(connections,
-		backpack.ChildAdded:Connect(function(item)
-			if fodEnabled and item.Name == "First of Darkness" then
-				fodCount += 1
-				updateTextbox()
-
-				OrionLib:MakeNotification({
-					Name = "First Of Darkness",
-					Content = "ได้รับ +1 (รวม: "..fodCount..")",
-					Time = 3
-				})
-			end
-		end)
-	)
-end
-
-local function stopFOD()
-	fodEnabled = false
-	for _,c in pairs(connections) do
-		pcall(function() c:Disconnect() end)
-	end
-	connections = {}
-end
-
--- =========================
--- 🟢 AUTO FARM
--- =========================
-local autoFarm = false
-
-local function TweenTo(pos)
-	local char = getChar()
-	local hrp = char:WaitForChild("HumanoidRootPart")
-
-	local dist = (hrp.Position - pos).Magnitude
-	local speed = 120
-
-	local tween = TweenService:Create(
-		hrp,
-		TweenInfo.new(dist / speed, Enum.EasingStyle.Linear),
-		{CFrame = CFrame.new(pos)}
-	)
-
-	tween:Play()
-	tween.Completed:Wait()
-end
-
-local function getChests()
-	local chests = {}
-	for _,v in pairs(workspace:GetDescendants()) do
-		if v.Name == "Chest" and v:IsA("Model") and v:FindFirstChild("HumanoidRootPart") then
-			table.insert(chests, v)
-		end
-	end
-	return chests
-end
-
-local function getClosestChest()
-	local char = getChar()
-	local hrp = char:WaitForChild("HumanoidRootPart")
-
-	local closest, dist = nil, math.huge
-
-	for _,chest in pairs(getChests()) do
-		local d = (hrp.Position - chest.HumanoidRootPart.Position).Magnitude
-		if d < dist then
-			dist = d
-			closest = chest
-		end
-	end
-
-	return closest
-end
-
-task.spawn(function()
-	while true do
-		task.wait(0.2)
-		if autoFarm then
-			local chest = getClosestChest()
-			if chest then
-				
-				updateBeli()
-				TweenTo(chest.HumanoidRootPart.Position)
-				task.wait(1)
-
-				local beli = getBeliValue()
-				if beli then
-					local diff = beli.Value - lastBeli
-					if diff > 0 then
-						beliEarned += diff
-
-						OrionLib:MakeNotification({
-							Name = "Beli From Chest",
-							Content = "+ "..diff.." (รวม: "..beliEarned..")",
-							Time = 2
-						})
-					end
-				end
-			end
-		end
-	end
-end)
-
--- =========================
--- 🔵 ESP
--- =========================
-local espEnabled = false
-local espConnection
-
-local function addESP(obj)
-	if obj:FindFirstChild("ESP") then return end
-	
-	local h = Instance.new("Highlight")
-	h.Name = "ESP"
-	h.FillColor = Color3.fromRGB(255,255,0)
-	h.FillTransparency = 0.3
-	h.Parent = obj
-end
-
-local function removeESP()
-	for _,v in pairs(workspace:GetDescendants()) do
-		if v.Name == "Chest" and v:FindFirstChild("ESP") then
-			v.ESP:Destroy()
-		end
-	end
-end
-
--- =========================
--- 🌈 NEON
--- =========================
-local neonEnabled = false
-local neonPart
-
-local function createNeon()
-	if neonPart then return end
-
-	local char = getChar()
-	local hrp = char:WaitForChild("HumanoidRootPart")
-
-	neonPart = Instance.new("Part")
-	neonPart.Size = Vector3.new(5,0.3,5)
-	neonPart.Anchored = false
-	neonPart.CanCollide = false
-	neonPart.Material = Enum.Material.Neon
-	neonPart.Parent = workspace
-
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = neonPart
-	weld.Part1 = hrp
-	weld.Parent = neonPart
-
-	neonPart.CFrame = hrp.CFrame * CFrame.new(0,-3,0)
-
-	task.spawn(function()
-		while neonEnabled and neonPart do
-			neonPart.Color = Color3.fromHSV(tick()%5/5,1,1)
-			task.wait(0.1)
-		end
-	end)
-end
-
-local function removeNeon()
-	if neonPart then
-		neonPart:Destroy()
-		neonPart = nil
-	end
-end
-
--- =========================
--- 🎮 UI
--- =========================
-Tab1:AddToggle({
-	Name = "Auto Farm Chest",
-	Default = false,
-	Callback = function(v)
-		autoFarm = v
-	end    
+local Section = Tab1:AddSection({
+	Name = "Section"
 })
 
-Tab1:AddToggle({
-	Name = "Esp Chest",
-	Default = false,
-	Callback = function(v)
-		espEnabled = v
-		
-		if v then
-			for _,c in pairs(getChests()) do
-				addESP(c)
-			end
-			
-			espConnection = workspace.DescendantAdded:Connect(function(obj)
-				if espEnabled and obj.Name == "Chest" then
-					addESP(obj)
-				end
-			end)
-		else
-			if espConnection then espConnection:Disconnect() end
-			removeESP()
-		end
-	end    
+--[[
+Name = <string> - The name of the section.
+]]
+
+OrionLib:MakeNotification({
+	Name = "Title!",
+	Content = "Notification content... what will it say??",
+	Image = "rbxassetid://4483345998",
+	Time = 5000
 })
 
-Tab1:AddToggle({
-	Name = "Part Neon",
-	Default = false,
-	Callback = function(v)
-		neonEnabled = v
-		if v then createNeon() else removeNeon() end
-	end    
-})
-
-Tab1:AddToggle({
-	Name = "Track First Of Darkness",
-	Default = false,
-	Callback = function(v)
-		if v then startFOD() else stopFOD() end
-	end    
-})
-
-textboxRef = Tab1:AddTextbox({
-	Name = "First Of Darkness",
-	Default = "First Of Darkness : 0",
-	TextDisappear = false
-})
+--[[
+Title = <string> - The title of the notification.
+Content = <string> - The content of the notification.
+Image = <string> - The icon of the notification.
+Time = <number> - The duration of the notfication.
+]]
 
 Tab1:AddButton({
-	Name = "Check First Of Darkness",
+	Name = "Button!",
 	Callback = function()
-		scanFOD()
+      		print("button pressed")
+  	end    
+})
+
+--[[
+Name = <string> - The name of the button.
+Callback = <function> - The function of the button.
+]]
+
+Tab1:AddToggle({
+	Name = "This is a toggle!",
+	Default = false,
+	Callback = function(Value)
+		print(Value)
 	end    
 })
 
-Tab1:AddButton({
-	Name = "Check Beli Earned",
-	Callback = function()
-		OrionLib:MakeNotification({
-			Name = "Beli Total",
-			Content = "เงินจากกล่อง: "..beliEarned,
-			Time = 4
-		})
+Tab1:AddLabel("Label")
+
+Tab1:AddTextbox({
+	Name = "Textbox",
+	Default = "default box input",
+	TextDisappear = true,
+	Callback = function(Value)
+		print(Value)
+	end	  
+})
+
+--[[
+Name = <string> - The name of the textbox.
+Default = <string> - The default value of the textbox.
+TextDisappear = <bool> - Makes the text disappear in the textbox after losing focus.
+Callback = <function> - The function of the textbox.
+]]
+
+Tab1:AddDropdown({
+	Name = "Dropdown",
+	Default = "1",
+	Options = {"1", "2"},
+	Callback = function(Value)
+		print(Value)
 	end    
 })
+
+--[[
+Name = <string> - The name of the dropdown.
+Default = <string> - The default value of the dropdown.
+Options = <table> - The options in the dropdown.
+Callback = <function> - The function of the dropdown.
+]]
